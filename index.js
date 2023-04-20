@@ -80,8 +80,8 @@ const server = http.createServer((req, res) => {
             await new Promise(res => setTimeout(res, 1000));
             number++
             console.log(`Got here too ${number}`);
-            console.log('Price now:', connection.terminalState.price('GBPUSD'));
-            const obj = connection.terminalState.price('GBPUSD');
+            console.log('Price now:', connection.terminalState.price('EURUSD'));
+            const obj = connection.terminalState.price('EURUSD');
             console.log('My structure' , obj);
 
             socket.send("jsjj")
