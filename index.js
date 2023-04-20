@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
             socket = ws;
             resolve(ws)
         });
-        ws
+        
         })
          
         const account = await api.metatraderAccountApi.getAccount(accountId);
