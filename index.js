@@ -75,7 +75,7 @@ const server = http.createServer((req, res) => {
         console.log('[' + (new Date().toISOString()) + '] Synchronized successfully, streaming ' + 'EURUSD' +
           ' market data now...');
           let number = 1;
-          while(true && number < 30){
+          while(true){
             console.log(`Got here  ${number}`);
             number++;
             await new Promise(res => setTimeout(res, 1000));
