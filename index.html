@@ -14,6 +14,14 @@
             console.log('Connected to server')
         })
 
+        ws.addEventListener('message', (event) => {
+            //  const { data } = JSON.parse(event.data);
+            // console.log(`Received message: ${data}`);
+            console.log('Received event:', event);
+  const obj = JSON.parse(event.data);
+  console.log('Received object:', obj);
+        });
+
     </script>   
 </body>
 </html>
