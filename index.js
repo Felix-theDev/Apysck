@@ -19,7 +19,7 @@ const server = http.createServer((req, res) => {
       res.end();
     });
     
-    server.listen(3000, () => {
+    server.listen(3333, () => {
       console.log('Server listening on http://localhost:3000');
       testMetaApiSynchronization();
  });
