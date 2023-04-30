@@ -27,85 +27,97 @@ const server = http.createServer((req, res) => {
  });
 
  async function testMetaApiSynchronization(){
-    let socket;
+    
 
     const wss = new Websocket.Server({ server })
     let initialize;
       try {
         initialize = await new Promise((resolve)=>{
             wss.on('connection', (ws)=>{
+             
             console.log('A new client is connected');
-            socket = ws;
+            let socket = ws;
             resolve(ws)
+
+            connectUser(socket);
         });
+        wss.on('close', (ws)=>{
+          console.log('A client has disconnected');
+        });
+
+
         
         })
-         
-        const account = await api.metatraderAccountApi.getAccount(accountId);
-        const initialState = account.state;
-        const deployedStates = ['DEPLOYING', 'DEPLOYED'];
-    
-        if(!deployedStates.includes(initialState)) {
-          // wait until account is deployed and connected to broker
-          console.log('Deploying account');
-          await account.deploy();
-        }
-        console.log('Waiting for API server to connect to broker (may take couple of minutes)');
-        await account.waitConnected();
-    
-        // connect to MetaApi API
-        let connection = account.getStreamingConnection();
-        await connection.connect();
-    
-        // wait until terminal state synchronized to the local state
-        console.log('Waiting for SDK to synchronize to terminal state (may take some time depending on your history size)');
-        await connection.waitSynchronized();
-    
-        let terminalState = connection.terminalState;
-        console.log('connected:', terminalState.connected);
-       
-        terminalState.specification('EURUSD');
-        
-        await connection.subscribeToMarketData('EURUSD', [
-          {type: 'quotes', intervalInMilliseconds: 5000},
-          {type: 'candles', timeframe: '1m', intervalInMilliseconds: 10000},
-          {type: 'ticks'},
-          {type: 'marketDepth', intervalInMilliseconds: 5000}
-        ]);
-        console.log('Price after subscribe:', connection.terminalState.price('EURUSD'));
-    
-        console.log('[' + (new Date().toISOString()) + '] Synchronized successfully, streaming ' + 'EURUSD' +
-          ' market data now...');
-          let number = 1;
-          while(true){
-            console.log(`Got here  ${number}`);
-            number++;
-            await new Promise(res => setTimeout(res, 1000));
-            number++
-            console.log(`Got here too ${number}`);
-            console.log('Price now:', connection.terminalState.price('EURUSD'));
-            const obj = connection.terminalState.price('EURUSD');
-            console.log('My structure' , obj);
 
-            const json = JSON.stringify(obj);
-            socket.send(json);
-            
-          }
-          
-           
-          if(!deployedStates.includes(initialState)) {
-          // undeploy account if it was undeployed
-          console.log('Undeploying account');
-          await connection.close();
-          await account.undeploy();
-          
-        } 
+    
         
     
       } catch (err) {
         console.error(err);
       }
-      process.exit();
+      // process.exit();
+ }
+
+ async function connectUser(socket){
+  const account = await api.metatraderAccountApi.getAccount(accountId);
+  const initialState = account.state;
+  const deployedStates = ['DEPLOYING', 'DEPLOYED'];
+
+  if(!deployedStates.includes(initialState)) {
+    // wait until account is deployed and connected to broker
+    // console.log('Deploying account');
+    await account.deploy();
+  }
+  // console.log('Waiting for API server to connect to broker (may take couple of minutes)');
+  await account.waitConnected();
+
+  // connect to MetaApi API
+  let connection = account.getStreamingConnection();
+  await connection.connect();
+
+  // wait until terminal state synchronized to the local state
+  // console.log('Waiting for SDK to synchronize to terminal state (may take some time depending on your history size)');
+  await connection.waitSynchronized();
+
+  let terminalState = connection.terminalState;
+  // console.log('connected:', terminalState.connected);
+ 
+  terminalState.specification('EURUSD');
+  
+  await connection.subscribeToMarketData('EURUSD', [
+    {type: 'quotes', intervalInMilliseconds: 5000},
+    {type: 'candles', timeframe: '1m', intervalInMilliseconds: 10000},
+    {type: 'ticks'},
+    {type: 'marketDepth', intervalInMilliseconds: 5000}
+  ]);
+  console.log('Price after subscribe:', connection.terminalState.price('EURUSD'));
+
+  // console.log('[' + (new Date().toISOString()) + '] Synchronized successfully, streaming ' + 'EURUSD' +
+  //   ' market data now...');
+    let number = 1;
+    while(true){
+      console.log(`Got here  ${number}`);
+      number++;
+      await new Promise(res => setTimeout(res, 1000));
+      number++
+      // console.log(`Got here too ${number}`);
+      // console.log('Price now:', connection.terminalState.price('EURUSD'));
+      const obj = connection.terminalState.price('EURUSD');
+      // console.log('My structure' , obj);
+
+      const json = JSON.stringify(obj);
+      socket.send(json);
+      
+    }
     
+     
+    if(!deployedStates.includes(initialState)) {
+    // undeploy account if it was undeployed
+    console.log('Undeploying account');
+    await connection.close();
+    await account.undeploy();
+    
+  } 
+  
 
  }
