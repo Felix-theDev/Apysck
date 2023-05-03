@@ -40,31 +40,20 @@ const server = http.createServer((req, res) => {
             let socket = ws;
             resolve(ws)
 
+            ws.on('message',async (message)=>{
+              console.log(message);
+              if(message.type === 'login'){
+                connectAccountToMetaApi(message.login);
+              }
+              if(message.type === 'accountId'){
+                
+              }
+              
+            }); 
+
             // connectUser(socket);
         });
-        wss.on('message', async (login)=>{
-          console.log(login);
-          try {
-            let accounts = await api.metatraderAccountApi.getAccounts();
-            let account = accounts.find(a => a.login === login && a.type.startsWith('cloud'));
-              if (!account) {
-                  console.log('Adding MT5 account to MetaApi');
-                  account = await api.metatraderAccountApi.createAccount({
-                  name: 'Test account',
-                  type: 'cloud',
-                  login: login,
-                  password: password,
-                  server: serverName,
-                  platform: 'mt5',
-                  magic: 1000
-              });
-              } else {
-                console.log('MT5 account already added to MetaApi');
-              }
-          } catch (error) {
-            console.log(error);
-          }
-        });       
+              
         })
 
     
@@ -145,8 +134,29 @@ const server = http.createServer((req, res) => {
 
  }
 
- async function subscribe(terminal){
-  
+//  async function streamPriceData()
+
+ async function connectAccountToMetaApi(login){
+  try {
+    let accounts = await api.metatraderAccountApi.getAccounts();
+    let account = accounts.find(a => a.login === login && a.type.startsWith('cloud'));
+      if (!account) {
+          console.log('Adding MT5 account to MetaApi');
+          account = await api.metatraderAccountApi.createAccount({
+          name: 'Test account',
+          type: 'cloud',
+          login: login,
+          password: password,
+          server: serverName,
+          platform: 'mt5',
+          magic: 1000
+      });
+      } else {
+        console.log('MT5 account already added to MetaApi');
+      }
+  } catch (error) {
+    console.log(error);
+  }
 
 
  }

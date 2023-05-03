@@ -12,20 +12,23 @@
         const ws = new WebSocket('ws://localhost:3000');
         ws.addEventListener('open', ()=>{
             console.log('Connected to server')
+            ws.send(5278335);
         })
 
-        ws.addEventListener('message', (event) => {
-            //  const { data } = JSON.parse(event.data);
-            // console.log(`Received message: ${data}`);
-            console.log('Received event:', event);
-            const obj = JSON.parse(event.data);
-            console.log('Received object:', obj);
-        });
-
+        // ws.addEventListener('message', (event) => {
+        //     //  const { data } = JSON.parse(event.data);
+        //     // console.log(`Received message: ${data}`);
+        //     console.log('Received event:', event);
+        //     const obj = JSON.parse(event.data);
+        //     console.log('Received object:', obj);
+        // });
+        
         ws.addEventListener('close', ()=>{
 
             console.log('Closing connection to server')
         })
+
+        
 
     </script>   
 </body>
