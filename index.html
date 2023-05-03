@@ -8,8 +8,8 @@
 </head>
 <body>
     <script>
-        const ws = new WebSocket('ws://apysck-production.up.railway.app');
-        // const ws = new WebSocket('ws://localhost:3000');
+        // const ws = new WebSocket('ws://apysck-production.up.railway.app');
+        const ws = new WebSocket('ws://localhost:3000');
         ws.addEventListener('open', ()=>{
             console.log('Connected to server')
         })
@@ -21,6 +21,11 @@
             const obj = JSON.parse(event.data);
             console.log('Received object:', obj);
         });
+
+        ws.addEventListener('close', ()=>{
+
+            console.log('Closing connection to server')
+        })
 
     </script>   
 </body>

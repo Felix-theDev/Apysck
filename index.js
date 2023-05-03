@@ -41,12 +41,29 @@ const server = http.createServer((req, res) => {
 
             connectUser(socket);
         });
-        wss.on('close', (ws)=>{
-          console.log('A client has disconnected');
-        });
-
-
-        
+        wss.on('message', async (login)=>{
+          console.log(login);
+          try {
+            let accounts = await api.metatraderAccountApi.getAccounts();
+            let account = accounts.find(a => a.login === login && a.type.startsWith('cloud'));
+              if (!account) {
+                  console.log('Adding MT5 account to MetaApi');
+                  account = await api.metatraderAccountApi.createAccount({
+                  name: 'Test account',
+                  type: 'cloud',
+                  login: login,
+                  password: password,
+                  server: serverName,
+                  platform: 'mt5',
+                  magic: 1000
+              });
+              } else {
+                console.log('MT5 account already added to MetaApi');
+              }
+          } catch (error) {
+            console.log(error);
+          }
+        });       
         })
 
     
@@ -59,6 +76,8 @@ const server = http.createServer((req, res) => {
  }
 
  async function connectUser(socket){
+
+  let continueStream = true;
   const account = await api.metatraderAccountApi.getAccount(accountId);
   const initialState = account.state;
   const deployedStates = ['DEPLOYING', 'DEPLOYED'];
@@ -92,10 +111,14 @@ const server = http.createServer((req, res) => {
   ]);
   console.log('Price after subscribe:', connection.terminalState.price('EURUSD'));
 
+  socket.on('close', (ws)=>{
+    console.log('A client has disconnected');
+    continueStream = false;
+  });
   // console.log('[' + (new Date().toISOString()) + '] Synchronized successfully, streaming ' + 'EURUSD' +
   //   ' market data now...');
     let number = 1;
-    while(true){
+    while(continueStream){
       console.log(`Got here  ${number}`);
       number++;
       await new Promise(res => setTimeout(res, 1000));
@@ -109,9 +132,12 @@ const server = http.createServer((req, res) => {
       socket.send(json);
       
     }
+
+    
     
      
     if(!deployedStates.includes(initialState)) {
+      
     // undeploy account if it was undeployed
     console.log('Undeploying account');
     await connection.close();
@@ -119,5 +145,11 @@ const server = http.createServer((req, res) => {
     
   } 
   
+
+ }
+
+ async function subscribe(terminal){
+  
+
 
  }
