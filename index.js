@@ -39,7 +39,7 @@ const server = http.createServer((req, res) => {
             let socket = ws;
             resolve(ws)
 
-            connectUser(socket);
+            // connectUser(socket);
         });
         wss.on('message', async (login)=>{
           console.log(login);
@@ -99,7 +99,6 @@ const server = http.createServer((req, res) => {
   await connection.waitSynchronized();
 
   let terminalState = connection.terminalState;
-  // console.log('connected:', terminalState.connected);
  
   terminalState.specification('EURUSD');
   
@@ -123,10 +122,7 @@ const server = http.createServer((req, res) => {
       number++;
       await new Promise(res => setTimeout(res, 1000));
       number++
-      // console.log(`Got here too ${number}`);
-      // console.log('Price now:', connection.terminalState.price('EURUSD'));
       const obj = connection.terminalState.price('EURUSD');
-      // console.log('My structure' , obj);
 
       const json = JSON.stringify(obj);
       socket.send(json);
