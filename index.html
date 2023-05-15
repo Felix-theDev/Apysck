@@ -7,22 +7,65 @@
     <title>Document</title>
 </head>
 <body>
+    <button id="stream-button">Start Stream</button>
+    <button id="deploy-button">Deploy Account</button>
+    
+    <button id="undeploy-button">Undeploy Account</button>
+    <button id="state-button">Get Account State</button>
     <script>
+        
         // const ws = new WebSocket('ws://apysck-production.up.railway.app');
         const ws = new WebSocket('ws://localhost:3000');
-        ws.addEventListener('open', ()=>{
-            console.log('Connected to server')
-            ws.send(5278335);
-        })
 
-        // ws.addEventListener('message', (event) => {
-        //     //  const { data } = JSON.parse(event.data);
-        //     // console.log(`Received message: ${data}`);
-        //     console.log('Received event:', event);
-        //     const obj = JSON.parse(event.data);
-        //     console.log('Received object:', obj);
-        // });
+        function startStream() {
+            ws.send(JSON.stringify({
+                type: 'stream',
+                currency: 'USDJPY'
+            }));
+        }
+        function undeployAccount() {
+            ws.send(JSON.stringify({
+                type: 'undeploy'
+            }));
+        }
+        function deployAccount() {
+            ws.send(JSON.stringify({
+                type: 'deploy'
+            }));
+        }
+        function getState() {
+            ws.send(JSON.stringify({
+                type: 'state'
+            }));
+        }
+        ws.addEventListener('open', async()=>{
+            console.log('Connected to server')
+            // ws.send(5278335);
+           await ws.send(JSON.stringify({
+            type: 'login',
+            login: '5278335'
+            }));
+            
+            })
         
+
+
+
+        ws.addEventListener('message', (event) => {
+            //  const { data } = JSON.parse(event.data);
+            // console.log(`Received message: ${data}`);
+            // console.log('Received event:', event);
+            const obj = JSON.parse(event.data);
+            console.log('Received object:', obj.symbol);
+            console.log('Bid Price:', obj.bid);
+            console.log('Ask Price:', obj.ask);
+            
+        });
+        document.getElementById("stream-button").addEventListener("click", startStream);
+        document.getElementById("undeploy-button").addEventListener("click", undeployAccount);
+        document.getElementById("deploy-button").addEventListener("click", deployAccount);
+        document.getElementById("state-button").addEventListener("click", getState);
+       
         ws.addEventListener('close', ()=>{
 
             console.log('Closing connection to server')

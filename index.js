@@ -3,6 +3,7 @@ const http = require('http');
 const Websocket = require('ws');
 const express = require('express');
 const { stringify } = require('querystring');
+const { Console } = require('console');
 
 const port = process.env.PORT || 3000;
 
@@ -13,150 +14,238 @@ const api = new MetaApi(token);
 
 
 const server = http.createServer((req, res) => {
-      // Handle incoming HTTP requests
-      res.writeHead(200, { 'Content-Type': 'text/plain' });
-      res.write('jello');
-    //   synchronizationExample.testMetaApiSynchronization();
-      res.write('I\'m back');
-      res.end();
-    });
-    
-    server.listen(port, () => {
-      console.log('Server listening on http://localhost:3000');
-      console.log('Server listening on http://localhost:3000');
-      testMetaApiSynchronization();
- });
+  // Handle incoming HTTP requests
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.write('jello');
+  //   synchronizationExample.testMetaApiSynchronization();
+  res.write('I\'m back');
+  res.end();
+});
 
- async function testMetaApiSynchronization(){
-    
+server.listen(port, () => {
+  console.log('Server listening on http://localhost:3000');
+  console.log('Server listening on http://localhost:3000');
+  testMetaApiSynchronization();
+});
 
-    const wss = new Websocket.Server({ server })
-    let initialize;
-      try {
-        initialize = await new Promise((resolve)=>{
-            wss.on('connection', (ws)=>{
-             
-            console.log('A new client is connected');
-            let socket = ws;
-            resolve(ws)
+async function testMetaApiSynchronization() {
 
-            ws.on('message',async (message)=>{
-              console.log(message);
-              if(message.type === 'login'){
-                connectAccountToMetaApi(message.login);
+
+  const wss = new Websocket.Server({ server })
+  let initialize;
+  try {
+    initialize = await new Promise((resolve) => {
+      wss.on('connection', (ws) => {
+
+        console.log('A new client is connected');
+        let socket = ws;
+        resolve(ws)
+        let account;
+        ws.on('message', async (data) => {
+          console.log(data);
+          const message = JSON.parse(data);
+          if (message.type === 'login') {
+            account = await connectAccountToMetaApi(message.login);
+          }
+          else if (message.type === 'accountId') {
+            account = await connectAccountToMetaApi(message.accountId)
+          } 
+          else if(message.type === 'stream'){
+              if(account != null){
+                let currency = message.currency;
+                console.log(currency)
+                  streamPriceData(socket, account, currency);
+
+              }else{
+                Console.log('No stream account provided');
               }
-              if(message.type === 'accountId'){
-                
-              }
-              
-            }); 
+          }else if(message.type === 'deploy'){
+            if(account != null){
+                deployAccount(account);
+            }
+          }else if (message.type === 'undeploy'){
+            if(account != null){
+              undeployAccount(account)
+            }
+          }
+          else if(message.type === 'state'){
+            getConnectionState(account)
+          }
+          else {
+            console.log('No login or account Id provided')
+          }
 
-            // connectUser(socket);
         });
-              
+        ws.on('close', ()=>{
+          console.log('A client has disconnected')
         })
+      });
+      // 
+      
 
-    
-        
-    
-      } catch (err) {
-        console.error(err);
-      }
-      // process.exit();
- }
 
- async function connectUser(socket){
+    })
 
-  let continueStream = true;
-  const account = await api.metatraderAccountApi.getAccount(accountId);
+
+  } catch (err) {
+    console.error(err);
+  }
+  // process.exit();
+}
+
+async function deployAccount(account) {
+
+ 
+  const initialState = account.state;
+  console.log(`Initial state is ${account.state}`);
+  const deployedStates = ['DEPLOYING', 'DEPLOYED'];
+
+  if (!deployedStates.includes(initialState)) {
+    // wait until account is deployed and connected to broker
+    console.log('Deploying account');
+    await account.deploy();
+    console.log('Account deployed')
+
+  }
+  console.log('Waiting for API server to connect to broker (may take couple of minutes)');
+  await account.waitConnected();
+  console.log('Account connected to broker')
+
+
+  console.log(`Current state is ${account.state}`);
+
+}
+
+async function getConnectionState(account){
+
+  console.log(`Current state is ${account.state}`);
+}
+
+
+
+async function streamPriceData(socket, account, currency){
   const initialState = account.state;
   const deployedStates = ['DEPLOYING', 'DEPLOYED'];
 
-  if(!deployedStates.includes(initialState)) {
-    // wait until account is deployed and connected to broker
-    // console.log('Deploying account');
-    await account.deploy();
-  }
-  // console.log('Waiting for API server to connect to broker (may take couple of minutes)');
-  await account.waitConnected();
+  // if (!deployedStates.includes(initialState)) {
+  //   // wait until account is deployed and connected to broker
+  //   // console.log('Deploying account');
+  //   await account.deploy();
+  // }
+  let continueStream = false;
+  if(deployedStates.includes(initialState)){
+      continueStream = true;
 
-  // connect to MetaApi API
-  let connection = account.getStreamingConnection();
-  await connection.connect();
-
-  // wait until terminal state synchronized to the local state
-  // console.log('Waiting for SDK to synchronize to terminal state (may take some time depending on your history size)');
-  await connection.waitSynchronized();
-
-  let terminalState = connection.terminalState;
- 
-  terminalState.specification('EURUSD');
+    
   
-  await connection.subscribeToMarketData('EURUSD', [
-    {type: 'quotes', intervalInMilliseconds: 5000},
-    {type: 'candles', timeframe: '1m', intervalInMilliseconds: 10000},
-    {type: 'ticks'},
-    {type: 'marketDepth', intervalInMilliseconds: 5000}
-  ]);
-  console.log('Price after subscribe:', connection.terminalState.price('EURUSD'));
 
-  socket.on('close', (ws)=>{
-    console.log('A client has disconnected');
-    continueStream = false;
-  });
-  // console.log('[' + (new Date().toISOString()) + '] Synchronized successfully, streaming ' + 'EURUSD' +
-  //   ' market data now...');
+    await account.waitConnected();
+
+    // connect to MetaApi API
+    let connection = account.getStreamingConnection();
+    await connection.connect();
+
+    // wait until terminal state synchronized to the local state
+    // console.log('Waiting for SDK to synchronize to terminal state (may take some time depending on your history size)');
+    await connection.waitSynchronized();
+
+    let terminalState = connection.terminalState;
+
+    terminalState.specification(currency);
+
+    await connection.subscribeToMarketData(currency, [
+      { type: 'quotes', intervalInMilliseconds: 5000 },
+      { type: 'candles', timeframe: '1m', intervalInMilliseconds: 10000 },
+      { type: 'ticks' },
+      { type: 'marketDepth', intervalInMilliseconds: 5000 }
+    ]);
+    console.log('Price after subscribe:', connection.terminalState.price(currency));
+
+    // console.log('[' + (new Date().toISOString()) + '] Synchronized successfully, streaming ' + 'EURUSD' +
+    //   ' market data now...');
     let number = 1;
-    while(continueStream){
+    while (continueStream && deployedStates.includes(account.state)) {
       console.log(`Got here  ${number}`);
       number++;
       await new Promise(res => setTimeout(res, 1000));
       number++
-      const obj = connection.terminalState.price('EURUSD');
-
+      const obj = connection.terminalState.price(currency);
+      
       const json = JSON.stringify(obj);
+      console.log(`Symbol is ${obj.symbol}`);
+      console.log(`Bid price is ${obj.bid}`);
+      console.log(`Ask price is ${obj.ask}`);
       socket.send(json);
-      
-    }
 
-    
-    
-     
-    if(!deployedStates.includes(initialState)) {
       
+    socket.on('close', (ws) => {
+      console.log('Streaming ended');
+      continueStream = false;
+    });
+    
+    
+
+  }
+
+}else{
+  console.log("Account is not deployed, can't stream");
+}
+
+}
+
+async function undeployAccount(account){
+  const initialState = account.state;
+  const deployedStates = ['DEPLOYING', 'DEPLOYED'];
+
+  if (!deployedStates.includes(initialState)) {
+
     // undeploy account if it was undeployed
     console.log('Undeploying account');
-    await connection.close();
+    // await connection.close();
     await account.undeploy();
-    
-  } 
-  
 
- }
+    console.log('Account undeployed');
 
-//  async function streamPriceData()
 
- async function connectAccountToMetaApi(login){
+  }
+
+  else{
+      await account.undeploy();
+      console.log('Account undeployed');
+  }
+
+}
+
+async function connectAccountToMetaApi(login) {
   try {
     let accounts = await api.metatraderAccountApi.getAccounts();
     let account = accounts.find(a => a.login === login && a.type.startsWith('cloud'));
-      if (!account) {
-          console.log('Adding MT5 account to MetaApi');
-          account = await api.metatraderAccountApi.createAccount({
-          name: 'Test account',
-          type: 'cloud',
-          login: login,
-          password: password,
-          server: serverName,
-          platform: 'mt5',
-          magic: 1000
+    if (!account) {
+      console.log('Adding MT5 account to MetaApi');
+      account = await api.metatraderAccountApi.createAccount({
+        name: 'Test account',
+        type: 'cloud',
+        login: login,
+        password: password,
+        server: serverName,
+        platform: 'mt5',
+        magic: 1000
       });
-      } else {
-        console.log('MT5 account already added to MetaApi');
-      }
+      return account;
+    } else {
+      console.log('MT5 account already added to MetaApi');
+      account = await api.metatraderAccountApi.getAccount(accountId);
+      console.log("gotten account info");
+    //  NEXT LINE NEEDED FOR DEBUGGING PURPOSE
+      // console.log(account);
+      return account;
+    }
   } catch (error) {
     console.log(error);
+    throw error;
   }
 
 
- }
+
+
+}
