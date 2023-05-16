@@ -45,10 +45,10 @@ async function testMetaApiSynchronization() {
           console.log(data);
           const message = JSON.parse(data);
           if (message.type === 'login') {
-            account = await connectAccountToMetaApi(message.login);
+            account = await connectAccountToMetaApi(socket, message.login);
           }
           else if (message.type === 'accountId') {
-            account = await connectAccountToMetaApi(message.accountId)
+            account = await connectAccountToMetaApi(socket, message.accountId)
           } 
           else if(message.type === 'stream'){
               if(account != null){
@@ -61,11 +61,11 @@ async function testMetaApiSynchronization() {
               }
           }else if(message.type === 'deploy'){
             if(account != null){
-                deployAccount(account);
+                deployAccount(socket, account);
             }
           }else if (message.type === 'undeploy'){
             if(account != null){
-              undeployAccount(account)
+              undeployAccount(socket, account)
             }
           }
           else if(message.type === 'state'){
@@ -93,7 +93,7 @@ async function testMetaApiSynchronization() {
   // process.exit();
 }
 
-async function deployAccount(account) {
+async function deployAccount(socket, account) {
 
  
   const initialState = account.state;
@@ -104,7 +104,8 @@ async function deployAccount(account) {
     // wait until account is deployed and connected to broker
     console.log('Deploying account');
     await account.deploy();
-    console.log('Account deployed')
+    console.log('Account deployed');
+    socket.send("Account Deployed")
 
   }
   console.log('Waiting for API server to connect to broker (may take couple of minutes)');
@@ -193,7 +194,7 @@ async function streamPriceData(socket, account, currency){
 
 }
 
-async function undeployAccount(account){
+async function undeployAccount(socket, account){
   const initialState = account.state;
   const deployedStates = ['DEPLOYING', 'DEPLOYED'];
 
@@ -205,6 +206,7 @@ async function undeployAccount(account){
     await account.undeploy();
 
     console.log('Account undeployed');
+    socket.send("Account Undeployed")
 
 
   }
@@ -216,7 +218,7 @@ async function undeployAccount(account){
 
 }
 
-async function connectAccountToMetaApi(login) {
+async function connectAccountToMetaApi(socket, login) {
   try {
     let accounts = await api.metatraderAccountApi.getAccounts();
     let account = accounts.find(a => a.login === login && a.type.startsWith('cloud'));
@@ -231,6 +233,7 @@ async function connectAccountToMetaApi(login) {
         platform: 'mt5',
         magic: 1000
       });
+      socket.send("Account has been added to Metaapi");
       return account;
     } else {
       console.log('MT5 account already added to MetaApi');
@@ -238,6 +241,7 @@ async function connectAccountToMetaApi(login) {
       console.log("gotten account info");
     //  NEXT LINE NEEDED FOR DEBUGGING PURPOSE
       // console.log(account);
+      socket.send("Account already exist on Metaapi server");
       return account;
     }
   } catch (error) {
@@ -245,7 +249,8 @@ async function connectAccountToMetaApi(login) {
     throw error;
   }
 
+//Implement a function to stop streaming without undeploying
+async function stopStreaming()
 
-
-
+  //set continue streaming to false
 }
