@@ -250,7 +250,9 @@ async function connectAccountToMetaApi(socket, login) {
   }
 
 //Implement a function to stop streaming without undeploying
-async function stopStreaming()
+async function stopStreaming(){
+  
+}
 
   //set continue streaming to false
 }
