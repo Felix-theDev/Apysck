@@ -37,6 +37,7 @@ async function testMetaApiSynchronization() {
     initialize = await new Promise((resolve) => {
       wss.on('connection', (ws) => {
 
+
         console.log('A new client is connected');
         let socket = ws;
         resolve(ws)
@@ -105,7 +106,13 @@ async function deployAccount(socket, account) {
     console.log('Deploying account');
     await account.deploy();
     console.log('Account deployed');
-    socket.send("Account Deployed")
+    const message = {
+      text: "Account Deployed"
+    };
+    
+    const jsonMessage = JSON.stringify(message);
+    
+    socket.send(jsonMessage);
 
   }
   console.log('Waiting for API server to connect to broker (may take couple of minutes)');
@@ -196,24 +203,36 @@ async function streamPriceData(socket, account, currency){
 
 async function undeployAccount(socket, account){
   const initialState = account.state;
+  console.log(`Account state is ${initialState}`);
   const deployedStates = ['DEPLOYING', 'DEPLOYED'];
 
   if (!deployedStates.includes(initialState)) {
-
-    // undeploy account if it was undeployed
-    console.log('Undeploying account');
-    // await connection.close();
-    await account.undeploy();
-
-    console.log('Account undeployed');
-    socket.send("Account Undeployed")
-
+   
+    // ignore if account account already undeployed
+    console.log('Account is not currently deployed');
+  
+    const message = {
+      text: "Account not currently deployed"
+    };
+    
+    const jsonMessage = JSON.stringify(message);
+    
+    socket.send(jsonMessage);
 
   }
 
   else{
+    
       await account.undeploy();
-      console.log('Account undeployed');
+      const message = {
+        text: "Account has just been undeployed"
+      };
+      
+      const jsonMessage = JSON.stringify(message);
+      
+      socket.send(jsonMessage);
+  
+      console.log('Account has just been undeployed');
   }
 
 }
@@ -228,20 +247,34 @@ async function connectAccountToMetaApi(socket, login) {
         name: 'Test account',
         type: 'cloud',
         login: login,
-        password: password,
-        server: serverName,
+        password: 'Everbest_1',
+        server: 'Deriv-Demo',
         platform: 'mt5',
         magic: 1000
       });
-      socket.send("Account has been added to Metaapi");
+      const message = {
+        text: "Account has been added to Metaapi"
+      };
+      
+      const jsonMessage = JSON.stringify(message);
+      
+      socket.send(jsonMessage);
+      
       return account;
     } else {
       console.log('MT5 account already added to MetaApi');
-      account = await api.metatraderAccountApi.getAccount(accountId);
+      // account = await api.metatraderAccountApi.getAccount(login);
       console.log("gotten account info");
     //  NEXT LINE NEEDED FOR DEBUGGING PURPOSE
       // console.log(account);
-      socket.send("Account already exist on Metaapi server");
+      const message = {
+        text: "Account already exists on Metaapi server" 
+      };
+      
+      const jsonMessage = JSON.stringify(message);
+      
+      socket.send(jsonMessage);
+      
       return account;
     }
   } catch (error) {

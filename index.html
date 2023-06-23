@@ -43,7 +43,7 @@
             // ws.send(5278335);
            await ws.send(JSON.stringify({
             type: 'login',
-            login: '5278335'
+            login: '3087049'
             }));
             
             })
@@ -56,6 +56,9 @@
             // console.log(`Received message: ${data}`);
             // console.log('Received event:', event);
             const obj = JSON.parse(event.data);
+            if (obj.text && obj.text.trim() !== '') {
+                console.log(obj.text);
+            }
             console.log('Received object:', obj.symbol);
             console.log('Bid Price:', obj.bid);
             console.log('Ask Price:', obj.ask);

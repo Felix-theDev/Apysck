@@ -6,7 +6,8 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "metaapi.cloud-sdk": "^20.2.0",
-    "nodemon": "^2.0.12"
+    "nodemon": "^2.0.12",
+    "safer-buffer": "^2.1.2"
   },
   "scripts": {
     "start": "node index.js",
